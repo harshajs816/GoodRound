@@ -12,6 +12,7 @@ import {
   XCircle,
   ExternalLink,
   X,
+  Pencil,
 } from "lucide-react";
 import api from "../lib/api";
 
@@ -32,6 +33,7 @@ export default function CharityManagement() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [editingCharity, setEditingCharity] = useState(null);
   const [saving, setSaving] = useState(false);
   const [verifyingId, setVerifyingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -140,8 +142,53 @@ export default function CharityManagement() {
     }
   }
 
-  async function handleVerify(charity) {
-    const confirmed = window.confirm(
+  function openEditForm(charity) {
+    setEditingCharity(charity);
+    setForm({
+      name: charity.name || "",
+      slug: charity.slug || "",
+      description: charity.description || "",
+      imageUrl: charity.imageUrl || "",
+      websiteUrl: charity.websiteUrl || "",
+      contactEmail: charity.contactEmail || "",
+    });
+    setShowForm(true);
+    setError("");
+    setNotice("");
+  }
+
+  async function handleEdit(event) {
+    event.preventDefault();
+    try {
+      setSaving(true);
+      setError("");
+      setNotice("");
+      const payload = {
+        name: form.name.trim(),
+        slug: form.slug.trim(),
+        description: form.description.trim(),
+        imageUrl: form.imageUrl.trim() || null,
+        websiteUrl: form.websiteUrl.trim() || null,
+        contactEmail: form.contactEmail.trim() || null,
+      };
+      const response = await api.patch(`/charities/${editingCharity.id}`, payload);
+      if (response.data.charity) {
+        setCharities((current) =>
+          current.map((item) => item.id === editingCharity.id ? response.data.charity : item)
+        );
+      }
+      setForm(emptyForm);
+      setEditingCharity(null);
+      setShowForm(false);
+      setNotice("Charity updated successfully.");
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not update charity.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleVerify(charity) {    const confirmed = window.confirm(
       `Verify "${charity.name}"? It will become eligible to appear in the public directory if active.`
     );
 
@@ -276,6 +323,8 @@ async function handleStatusToggle(charity) {
             type="button"
             onClick={() => {
               setShowForm(true);
+              setEditingCharity(null);
+              setForm(emptyForm);
               setError("");
               setNotice("");
             }}
@@ -365,16 +414,16 @@ async function handleStatusToggle(charity) {
             <div className="mb-6 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  Add New Charity
+                  {editingCharity ? "Edit Charity" : "Add New Charity"}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  New charities remain unverified until approved.
+                  {editingCharity ? "Update the charity details below." : "New charities remain unverified until approved."}
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => { setShowForm(false); setEditingCharity(null); setForm(emptyForm); }}
                 aria-label="Close form"
                 className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
               >
@@ -382,7 +431,7 @@ async function handleStatusToggle(charity) {
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-5">
+            <form onSubmit={editingCharity ? handleEdit : handleCreate} className="space-y-5">
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-semibold text-gray-700">
@@ -480,7 +529,7 @@ async function handleStatusToggle(charity) {
               <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => { setShowForm(false); setEditingCharity(null); setForm(emptyForm); }}
                   className="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
@@ -490,7 +539,7 @@ async function handleStatusToggle(charity) {
                   disabled={saving}
                   className="rounded-xl bg-green-900 px-5 py-3 font-semibold text-white hover:bg-green-950 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving ? "Saving..." : "Create Charity"}
+                  {saving ? "Saving..." : editingCharity ? "Save Changes" : "Create Charity"}
                 </button>
               </div>
             </form>
@@ -664,6 +713,15 @@ async function handleStatusToggle(charity) {
         Verified
       </span>
     )}
+
+    <button
+      type="button"
+      onClick={() => openEditForm(charity)}
+      disabled={updatingStatusId === charity.id}
+      className="whitespace-nowrap rounded-lg bg-slate-600 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+    >
+      <span className="flex items-center gap-1"><Pencil size={12} /> Edit</span>
+    </button>
 
     <button
       type="button"

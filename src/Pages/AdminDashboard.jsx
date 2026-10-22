@@ -8,15 +8,20 @@ const initialStats = [
   { key: "activeUsers", title: "Active Users", icon: "✅" },
   { key: "totalCharities", title: "Total Charities", icon: "❤️" },
   { key: "verifiedCharities", title: "Verified Charities", icon: "🏅" },
-  { key: "pendingCharities", title: "Pending Charities", icon: "⏳" },
   { key: "activeSubscriptions", title: "Active Subscriptions", icon: "💳" },
+  { key: "totalDraws", title: "Total Draws", icon: "🎯" },
+  { key: "publishedDraws", title: "Published Draws", icon: "✨" },
+  { key: "totalWinners", title: "Total Winners", icon: "🏆" },
+  { key: "pendingPayouts", title: "Pending Payouts", icon: "⏳" },
+  { key: "estimatedPrizePool", title: "Est. Prize Pool (₹)", icon: "💰" },
+  { key: "estimatedCharityTotal", title: "Est. Charity Total (₹)", icon: "🌱" },
+  { key: "pendingCharities", title: "Pending Verification", icon: "🔍" },
 ];
 
 const adminSections = [
   {
     title: "Charity Management",
-    description:
-      "Add charities, review their details and verify eligible organizations.",
+    description: "Add charities, review their details and verify eligible organizations.",
     path: "/admin/charities",
     icon: "❤️",
   },
@@ -24,14 +29,25 @@ const adminSections = [
     title: "User Management",
     description: "Review registered users and their account status.",
     path: "/admin/users",
-    icon: "👥"
+    icon: "👥",
   },
   {
     title: "Subscriptions",
     description: "Review membership plans and subscription activity.",
     path: "/admin/subscriptions",
     icon: "💳",
-    comingSoon: false,
+  },
+  {
+    title: "Draw Management",
+    description: "Create monthly draws, run simulations and publish results.",
+    path: "/admin/draws",
+    icon: "🎯",
+  },
+  {
+    title: "Winners Management",
+    description: "Verify winner submissions, review proof of scores and mark payouts.",
+    path: "/admin/winners",
+    icon: "🏆",
   },
 ];
 

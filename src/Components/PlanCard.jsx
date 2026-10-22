@@ -1,14 +1,18 @@
-
 import { Link } from "react-router-dom";
 import { ArrowRight, Check } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const features = [
   "Access to your member dashboard",
   "Record and track golf scores",
+  "Enter monthly prize draws",
   "Support participating charities",
+  "Charity contribution from each subscription",
 ];
 
 export default function PlanCard({ plan }) {
+  const { isAuthenticated } = useAuth();
+
   const price = new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: plan.currency || "INR",
@@ -40,6 +44,12 @@ export default function PlanCard({ plan }) {
         </span>
       </div>
 
+      {yearly && (
+        <p className="mt-1 text-xs font-semibold text-emerald-700">
+          Save vs monthly — best value
+        </p>
+      )}
+
       <ul className="mt-7 space-y-3">
         {features.map((feature) => (
           <li key={feature} className="flex items-start gap-3 text-sm text-slate-600">
@@ -50,15 +60,11 @@ export default function PlanCard({ plan }) {
       </ul>
 
       <Link
-        to="/signup"
+        to={isAuthenticated ? "/membership" : "/signup"}
         className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-emerald-900"
       >
-        Choose plan <ArrowRight size={16} />
+        {isAuthenticated ? "Subscribe now" : "Get started"} <ArrowRight size={16} />
       </Link>
-
-      <p className="mt-3 text-center text-xs text-slate-400">
-        Membership checkout is not yet enabled.
-      </p>
     </article>
   );
 }

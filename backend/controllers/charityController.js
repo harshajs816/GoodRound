@@ -295,10 +295,72 @@ const updateCharityStatus = async (req, res) => {
 };
 
 
+// PATCH /api/charities/:id
+// Admin: edit an existing charity's details
+const updateCharity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, slug, description, imageUrl, websiteUrl, contactEmail, isFeatured } = req.body;
+
+    const existing = await prisma.charity.findUnique({ where: { id } });
+
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Charity not found" });
+    }
+
+    // Validate slug if provided
+    if (slug !== undefined && slug !== null && slug !== "") {
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+        return res.status(400).json({ success: false, message: "Slug must be lowercase letters, numbers and hyphens only" });
+      }
+      // Check uniqueness
+      const duplicate = await prisma.charity.findFirst({ where: { slug, NOT: { id } } });
+      if (duplicate) {
+        return res.status(409).json({ success: false, message: "This charity slug already exists" });
+      }
+    }
+
+    for (const [field, value] of Object.entries({ imageUrl, websiteUrl })) {
+      if (value !== undefined && value !== null && value !== "") {
+        try {
+          const parsedUrl = new URL(value);
+          if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error();
+        } catch {
+          return res.status(400).json({ success: false, message: `${field} must be a valid HTTP or HTTPS URL` });
+        }
+      }
+    }
+
+    const updated = await prisma.charity.update({
+      where: { id },
+      data: {
+        ...(name !== undefined ? { name: name.trim() } : {}),
+        ...(slug !== undefined ? { slug } : {}),
+        ...(description !== undefined ? { description: description.trim() } : {}),
+        ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
+        ...(websiteUrl !== undefined ? { websiteUrl: websiteUrl || null } : {}),
+        ...(contactEmail !== undefined ? { contactEmail: contactEmail || null } : {}),
+        ...(typeof isFeatured === "boolean" ? { isFeatured } : {}),
+      },
+      select: {
+        id: true, name: true, slug: true, description: true,
+        imageUrl: true, websiteUrl: true, contactEmail: true,
+        isVerified: true, isActive: true, isFeatured: true, createdAt: true,
+      },
+    });
+
+    return res.json({ success: true, message: "Charity updated successfully", charity: updated });
+  } catch (error) {
+    console.error("Update charity error:", error.message);
+    return res.status(500).json({ success: false, message: "Could not update charity" });
+  }
+};
+
 module.exports = {
   getPublicCharities,
   getAllCharities,
   createCharity,
+  updateCharity,
   verifyCharity,
   updateCharityStatus,
 };

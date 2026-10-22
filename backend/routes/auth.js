@@ -162,7 +162,12 @@ router.get("/me", authenticateToken, async (req, res) => {
         email: true,
         role: true,
         isActive: true,
+        selectedCharityId: true,
+        charityContribution: true,
         createdAt: true,
+        selectedCharity: {
+          select: { id: true, name: true, slug: true, imageUrl: true },
+        },
       },
     });
 
@@ -184,6 +189,52 @@ router.get("/me", authenticateToken, async (req, res) => {
       success: false,
       message: "Could not fetch user profile",
     });
+  }
+});
+
+// PATCH /api/auth/profile — update charity selection and contribution %
+router.patch("/profile", authenticateToken, async (req, res) => {
+  try {
+    const { selectedCharityId, charityContribution } = req.body;
+    const updates = {};
+
+    if (selectedCharityId !== undefined) {
+      if (selectedCharityId === null) {
+        updates.selectedCharityId = null;
+      } else {
+        const charity = await prisma.charity.findUnique({
+          where: { id: selectedCharityId },
+          select: { id: true, isActive: true, isVerified: true },
+        });
+        if (!charity || !charity.isActive || !charity.isVerified) {
+          return res.status(400).json({ success: false, message: "Invalid or inactive charity" });
+        }
+        updates.selectedCharityId = selectedCharityId;
+      }
+    }
+
+    if (charityContribution !== undefined) {
+      const pct = Number(charityContribution);
+      if (!Number.isInteger(pct) || pct < 10 || pct > 100) {
+        return res.status(400).json({ success: false, message: "Charity contribution must be between 10 and 100 percent" });
+      }
+      updates.charityContribution = pct;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: updates,
+      select: {
+        id: true, name: true, email: true, role: true,
+        selectedCharityId: true, charityContribution: true,
+        selectedCharity: { select: { id: true, name: true, slug: true, imageUrl: true } },
+      },
+    });
+
+    return res.json({ success: true, message: "Profile updated", user });
+  } catch (error) {
+    console.error("Profile update error:", error.message);
+    return res.status(500).json({ success: false, message: "Could not update profile" });
   }
 });
 

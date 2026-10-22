@@ -9,8 +9,12 @@ import {
   ShieldCheck,
   Sparkles,
   ArrowRight,
+  ShieldAlert,
+  Heart,
+  Info,
 } from "lucide-react";
 import api from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
 
 const loadRazorpayScript = () =>
@@ -53,6 +57,30 @@ const formatInterval = (interval) => {
 
 export default function Membership() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Admins should not be able to purchase subscriptions
+  if (user?.role === "ADMIN") {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center px-5 text-center">
+        <div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white p-10 shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-800">
+            <ShieldAlert size={32} />
+          </div>
+          <h2 className="mt-5 text-2xl font-bold text-emerald-950">Admin accounts</h2>
+          <p className="mt-3 leading-7 text-slate-600">
+            Administrator accounts do not require a subscription. Membership plans are for regular users only.
+          </p>
+          <Link
+            to="/admin"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-800 px-6 py-3 font-bold text-white hover:bg-emerald-900"
+          >
+            Go to Admin Dashboard <ArrowRight size={17} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -369,35 +397,63 @@ const handleSelectPlan = async (plan) => {
                     </p>
                   </div>
 
-                  <div className="my-6 flex-1">
-                    <p className="mb-4 text-sm font-semibold text-slate-800">
-                      Plan overview
+                  {/* Charity donation breakdown */}
+                  <div className="my-5 rounded-xl border border-rose-100 bg-rose-50 p-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-rose-700 mb-2">
+                      <Heart size={13} /> Charity contribution included
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 text-xs text-slate-600">
+                      <div className="rounded-lg bg-white px-2 py-1.5 text-center">
+                        <p className="font-bold text-rose-700">
+                          {formatPrice(Number(plan.price) * 0.10, plan.currency)}
+                        </p>
+                        <p className="text-slate-400 mt-0.5">10% charity</p>
+                      </div>
+                      <div className="rounded-lg bg-white px-2 py-1.5 text-center">
+                        <p className="font-bold text-emerald-700">
+                          {formatPrice(Number(plan.price) * 0.50, plan.currency)}
+                        </p>
+                        <p className="text-slate-400 mt-0.5">50% prize pool</p>
+                      </div>
+                      <div className="rounded-lg bg-white px-2 py-1.5 text-center">
+                        <p className="font-bold text-blue-700">
+                          {formatPrice(Number(plan.price) * 0.40, plan.currency)}
+                        </p>
+                        <p className="text-slate-400 mt-0.5">40% platform</p>
+                      </div>
+                    </div>
+                    {user?.selectedCharity ? (
+                      <p className="mt-2 text-xs text-rose-600 font-medium">
+                        → Goes to: {user.selectedCharity.name}
+                      </p>
+                    ) : (
+                      <p className="mt-2 flex items-center gap-1 text-xs text-amber-600">
+                        <Info size={11} />
+                        Select a charity from your dashboard to direct your contribution.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <p className="mb-3 text-sm font-semibold text-slate-800">
+                      What's included
                     </p>
                     <ul className="space-y-3 text-sm text-slate-600">
                       <li className="flex items-start gap-3">
-                        <Check
-                          size={18}
-                          className="mt-0.5 shrink-0 text-green-700"
-                        />
-                        <span>
-                          {plan.billingInterval === "YEARLY"
-                            ? "Yearly billing period"
-                            : "Monthly billing period"}
-                        </span>
+                        <Check size={17} className="mt-0.5 shrink-0 text-green-700" />
+                        <span>Access to member dashboard & golf score tracking</span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <Check
-                          size={18}
-                          className="mt-0.5 shrink-0 text-green-700"
-                        />
-                        <span>Membership managed by GoodRound</span>
+                        <Check size={17} className="mt-0.5 shrink-0 text-green-700" />
+                        <span>Entry into monthly prize draws</span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <ShieldCheck
-                          size={18}
-                          className="mt-0.5 shrink-0 text-green-700"
-                        />
-                        <span>Plan details available before checkout</span>
+                        <Heart size={17} className="mt-0.5 shrink-0 text-rose-600" />
+                        <span>10% goes to your chosen charity automatically</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <ShieldCheck size={17} className="mt-0.5 shrink-0 text-green-700" />
+                        <span>Secure payment via Razorpay</span>
                       </li>
                     </ul>
                   </div>

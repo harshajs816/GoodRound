@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 
 const publicItems = [
   { label: "How it works", to: "/#how-it-works" },
-  { label: "Our impact", to: "/#impact" },
+  { label: "Draws", to: "/draws" },
   { label: "Charities", to: "/charities" },
 ];
 
@@ -14,17 +14,18 @@ const publicItems = [
 const userItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Golf Scores", to: "/golf-scores" },
+  { label: "Draws", to: "/draws" },
   { label: "Membership Plans", to: "/membership" },
   { label: "My Membership", to: "/my-membership" },
   { label: "Charities", to: "/charities" },
 ];
 
-
-
 const adminItems = [
   { label: "Admin Dashboard", to: "/admin" },
   { label: "User Management", to: "/admin/users" },
   { label: "Charity Management", to: "/admin/charities" },
+  { label: "Draw Management", to: "/admin/draws" },
+  { label: "Winners", to: "/admin/winners" },
 ];
 
 export default function Navbar() {

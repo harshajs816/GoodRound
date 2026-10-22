@@ -243,6 +243,31 @@ const verifyPayment = async (req, res) => {
         throw new Error("SUBSCRIPTION_ALREADY_PROCESSED");
       }
 
+      // Auto-create a CharityDonation record if user has a selected charity.
+      // Default = 10% of plan price (PRD §08.1). Respect user's own percentage if higher.
+      const userRecord = await tx.user.findUnique({
+        where: { id: subscription.userId },
+        select: { selectedCharityId: true, charityContribution: true },
+      });
+
+      if (userRecord?.selectedCharityId) {
+        const planPrice = Number(subscription.plan.price);
+        const contributionPct = Math.max(userRecord.charityContribution ?? 10, 10);
+        const donationAmount = parseFloat(
+          ((planPrice * contributionPct) / 100).toFixed(2)
+        );
+
+        await tx.charityDonation.create({
+          data: {
+            userId: subscription.userId,
+            charityId: userRecord.selectedCharityId,
+            amount: donationAmount,
+            currency: subscription.plan.currency || "INR",
+            status: "COMPLETED",
+          },
+        });
+      }
+
       return tx.subscription.findUnique({
         where: { id: subscription.id },
         include: {
@@ -262,6 +287,7 @@ const verifyPayment = async (req, res) => {
       success: true,
       message: "Payment verified and membership activated.",
       subscription: activated,
+      charityDonationCreated: true,
     });
   } catch (error) {
     if (error.message === "SUBSCRIPTION_ALREADY_PROCESSED") {

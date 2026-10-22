@@ -1,8 +1,10 @@
 
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Heart, ShieldCheck, Trophy } from "lucide-react";
 import { useSubscriptionPlans } from "../lib/queries";
 import PlanCard from "../Components/PlanCard";
+import api from "../lib/api";
 
 export default function Home() {
   const {
@@ -11,6 +13,18 @@ export default function Home() {
     isError,
     refetch,
   } = useSubscriptionPlans();
+
+  const [featuredCharities, setFeaturedCharities] = useState([]);
+
+  useEffect(() => {
+    api.get("/charities")
+      .then((res) => {
+        const all = res.data?.charities || [];
+        // Show up to 3 charities as spotlight
+        setFeaturedCharities(all.slice(0, 3));
+      })
+      .catch(() => {});
+  }, []);
 
   const visiblePlans = plans.filter((plan) => plan.isActive !== false);
 
@@ -172,6 +186,51 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      {/* ── Charity spotlight ── */}
+      {featuredCharities.length > 0 && (
+        <section id="charities" className="bg-white py-20">
+          <div className="mx-auto max-w-7xl px-5 lg:px-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">
+                  Charity spotlight
+                </p>
+                <h2 className="mt-3 text-3xl font-extrabold text-emerald-950 sm:text-4xl">
+                  Causes we support.
+                </h2>
+                <p className="mt-3 max-w-xl leading-7 text-slate-600">
+                  Every GoodRound subscription directs at least 10% to a charity of your choice.
+                </p>
+              </div>
+              <Link to="/charities" className="inline-flex items-center gap-2 font-bold text-emerald-800 hover:text-emerald-950">
+                View all charities <ArrowRight size={17} />
+              </Link>
+            </div>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {featuredCharities.map((charity) => (
+                <article key={charity.id} className="group rounded-3xl border border-slate-100 bg-[#f8faf7] p-6 transition hover:-translate-y-1 hover:shadow-md">
+                  {charity.imageUrl ? (
+                    <img src={charity.imageUrl} alt={charity.name} className="h-16 w-16 rounded-2xl object-cover mb-4" />
+                  ) : (
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                      <Heart size={28} />
+                    </div>
+                  )}
+                  <h3 className="text-lg font-bold text-emerald-950">{charity.name}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 line-clamp-3">{charity.description}</p>
+                  {charity.websiteUrl && (
+                    <a href={charity.websiteUrl} target="_blank" rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:underline">
+                      Visit website <ArrowRight size={12} />
+                    </a>
+                  )}
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section id="pricing" className="bg-[#f5f8f3] py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">

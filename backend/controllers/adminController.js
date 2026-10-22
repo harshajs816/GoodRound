@@ -11,6 +11,11 @@ async function getDashboardStats(req, res) {
       pendingCharities,
       activeSubscriptions,
       recentUsers,
+      totalDraws,
+      publishedDraws,
+      totalWinners,
+      pendingPayouts,
+      avgPlanPrice,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { isActive: true } }),
@@ -30,7 +35,18 @@ async function getDashboardStats(req, res) {
           createdAt: true,
         },
       }),
+      prisma.draw.count(),
+      prisma.draw.count({ where: { status: "PUBLISHED" } }),
+      prisma.drawWin.count(),
+      prisma.drawWin.count({ where: { payoutStatus: "PENDING" } }),
+      prisma.subscriptionPlan.aggregate({ _avg: { price: true }, where: { isActive: true } }),
     ]);
+
+    const avgPrice = Number(avgPlanPrice._avg.price) || 499;
+    const estimatedPrizePool = activeSubscriptions * avgPrice * 0.5;
+
+    // Total charity contributions (10% of active subscriptions)
+    const estimatedCharityTotal = activeSubscriptions * avgPrice * 0.1;
 
     return res.status(200).json({
       success: true,
@@ -41,6 +57,12 @@ async function getDashboardStats(req, res) {
         verifiedCharities,
         pendingCharities,
         activeSubscriptions,
+        totalDraws,
+        publishedDraws,
+        totalWinners,
+        pendingPayouts,
+        estimatedPrizePool: Math.round(estimatedPrizePool),
+        estimatedCharityTotal: Math.round(estimatedCharityTotal),
       },
       recentUsers,
     });

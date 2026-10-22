@@ -10,21 +10,21 @@ const adminRoutes = require("./routes/admin");
 const paymentRoutes = require("./routes/payments");
 const charityRoutes = require("./routes/charities");
 const subscriptionRoutes = require("./routes/subscriptions");
+const drawRoutes = require("./routes/draws");
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
-
-
-
 app.use("/api/auth", authRoutes);
 app.use("/api/golf-scores", golfScoreRoutes);
 app.use("/api/charities", charityRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/payments",paymentRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/draws", drawRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -32,7 +32,6 @@ app.get("/api/health", (req, res) => {
     message: "GoodRound API is running",
   });
 });
-
 
 app.listen(PORT, () => {
   console.log(`GoodRound API running on port ${PORT}`);

@@ -9,6 +9,7 @@ const {
   getPublicCharities,
   getAllCharities,
   createCharity,
+  updateCharity,
   verifyCharity,
   updateCharityStatus,
 } = require("../controllers/charityController");
@@ -33,12 +34,27 @@ router.post(
   createCharity
 );
 
+// Fix: verify route was missing — now registered
+router.patch(
+  "/:id/verify",
+  authenticateToken,
+  authorizeRoles("ADMIN"),
+  verifyCharity
+);
 
 router.patch(
   "/:id/status",
   authenticateToken,
   authorizeRoles("ADMIN"),
   updateCharityStatus
+);
+
+// Edit charity (name, description, urls, etc.)
+router.patch(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("ADMIN"),
+  updateCharity
 );
 
 module.exports = router;
