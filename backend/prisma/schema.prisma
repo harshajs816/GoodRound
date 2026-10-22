@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String            @id @default(uuid())
+  name             String
+  email            String            @unique
+  passwordHash     String
+  role             String            @default("USER")
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  golfScores       GolfScore[]
+  charityDonations CharityDonation[]
+  subscriptions    Subscription[]
+}
+
+model GolfScore {
+  id        String   @id @default(uuid())
+  userId    String
+  score     Int
+  scoreDate DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scoreDate])
+  @@index([userId, scoreDate])
+}
+
+model Charity {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  description  String
+  imageUrl     String?
+  websiteUrl   String?
+  contactEmail String?
+  isVerified   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  donations CharityDonation[]
+}
+
+model CharityDonation {
+  id        String   @id @default(uuid())
+  userId    String
+  charityId String
+  amount    Decimal  @db.Decimal(10, 2)
+  currency  String   @default("INR")
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  charity Charity @relation(fields: [charityId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([charityId, status])
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+}
+
+model SubscriptionPlan {
+  id              String          @id @default(uuid())
+  name            String
+  description     String?
+  billingInterval BillingInterval
+  price           Decimal         @db.Decimal(10, 2)
+  currency        String          @default("INR")
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  subscriptions Subscription[]
+
+  @@unique([name, billingInterval])
+}
+
+model Subscription {
+  id                     String             @id @default(uuid())
+  userId                 String
+  planId                 String
+  status                 SubscriptionStatus @default(PENDING)
+  startsAt               DateTime?
+  endsAt                 DateTime?
+  paymentProvider        String?
+  providerSubscriptionId String?            @unique
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@index([planId, status])
+razorpayOrderId   String? @unique
+razorpayPaymentId String? @unique
+paymentAmount     Int?
+paymentCurrency   String?
+}
