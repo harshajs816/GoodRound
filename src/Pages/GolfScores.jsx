@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   useMutation,
   useQuery,
@@ -14,6 +15,8 @@ import {
   Pencil,
   Trash2,
   X,
+  Crown,
+  Lock,
 } from "lucide-react";
 import api from "../lib/api";
 
@@ -60,6 +63,18 @@ export default function GolfScores() {
   const [editMessage, setEditMessage] = useState("");
   const [deletingRound, setDeletingRound] = useState(null);
   const [deleteError, setDeleteError] = useState("");
+
+  // Check active subscription
+  const subscriptionQuery = useQuery({
+    queryKey: ["my-subscriptions"],
+    queryFn: async () => {
+      const res = await api.get("/subscriptions/my");
+      return res.data;
+    },
+  });
+
+  const hasActiveSub = (subscriptionQuery.data?.subscriptions || [])
+    .some((s) => s.status === "ACTIVE");
 
   const scoresQuery = useQuery({
     queryKey: ["my-golf-scores"],
@@ -242,6 +257,44 @@ export default function GolfScores() {
           </p>
         </div>
 
+        {/* Subscription check — show locked state if no active plan */}
+        {!subscriptionQuery.isPending && !hasActiveSub && (
+          <div className="mb-8 overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
+            <div className="bg-amber-50 px-6 py-5 sm:px-8">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <Lock size={22} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-extrabold text-amber-950">
+                    Membership required to record scores
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-amber-800">
+                    Golf score recording is available to active members only. Subscribe to a monthly or yearly plan to unlock this feature, enter monthly draws, and support your chosen charity.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:px-8">
+              <Link
+                to="/membership"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-800 px-6 py-3 font-bold text-white hover:bg-emerald-900"
+              >
+                <Crown size={17} /> View membership plans
+              </Link>
+              <p className="text-sm text-slate-500">
+                Already subscribed?{" "}
+                <button
+                  onClick={() => subscriptionQuery.refetch()}
+                  className="font-bold text-emerald-700 hover:underline"
+                >
+                  Refresh status
+                </button>
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <section className="rounded-3xl bg-emerald-950 p-6 text-white shadow-lg sm:p-8">
             <div className="flex items-center gap-3">
@@ -256,59 +309,77 @@ export default function GolfScores() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-7 space-y-5">
-              <label className="block text-sm font-semibold text-emerald-50">
-                Stableford score
-                <input
-                  type="number"
-                  min="1"
-                  max="45"
-                  step="1"
-                  required
-                  value={score}
-                  onChange={(event) => setScore(event.target.value)}
-                  placeholder="Enter score (1–45)"
-                  className="mt-2 w-full rounded-xl border border-white/15 bg-white px-4 py-3.5 text-slate-900 outline-none focus:ring-4 focus:ring-emerald-300/30"
-                />
-              </label>
-
-              <label className="block text-sm font-semibold text-emerald-50">
-                Round date
-                <span className="mt-2 flex items-center gap-3 rounded-xl border border-white/15 bg-white px-4 text-slate-700">
-                  <CalendarDays size={19} className="shrink-0 text-emerald-800" />
+            {!hasActiveSub && !subscriptionQuery.isPending ? (
+              <div className="mt-7 rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
+                <Lock size={28} className="mx-auto mb-3 text-emerald-300" />
+                <p className="text-sm font-semibold text-emerald-100">
+                  Score recording is locked
+                </p>
+                <p className="mt-1 text-xs text-emerald-100/70">
+                  An active membership is required.
+                </p>
+                <Link
+                  to="/membership"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-emerald-950 hover:bg-emerald-100"
+                >
+                  <Crown size={15} /> Get membership
+                </Link>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+                <label className="block text-sm font-semibold text-emerald-50">
+                  Stableford score
                   <input
-                    type="date"
+                    type="number"
+                    min="1"
+                    max="45"
+                    step="1"
                     required
-                    max={today}
-                    value={date}
-                    onChange={(event) => setDate(event.target.value)}
-                    className="min-w-0 flex-1 bg-transparent py-3.5 outline-none"
+                    value={score}
+                    onChange={(event) => setScore(event.target.value)}
+                    placeholder="Enter score (1–45)"
+                    className="mt-2 w-full rounded-xl border border-white/15 bg-white px-4 py-3.5 text-slate-900 outline-none focus:ring-4 focus:ring-emerald-300/30"
                   />
-                </span>
-              </label>
+                </label>
 
-              {errorMessage && (
-                <p role="alert" className="rounded-xl bg-red-100 p-3 text-sm text-red-800">
-                  {errorMessage}
-                </p>
-              )}
+                <label className="block text-sm font-semibold text-emerald-50">
+                  Round date
+                  <span className="mt-2 flex items-center gap-3 rounded-xl border border-white/15 bg-white px-4 text-slate-700">
+                    <CalendarDays size={19} className="shrink-0 text-emerald-800" />
+                    <input
+                      type="date"
+                      required
+                      max={today}
+                      value={date}
+                      onChange={(event) => setDate(event.target.value)}
+                      className="min-w-0 flex-1 bg-transparent py-3.5 outline-none"
+                    />
+                  </span>
+                </label>
 
-              {message && (
-                <p role="status" className="flex items-start gap-2 rounded-xl bg-emerald-100 p-3 text-sm text-emerald-950">
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-                  {message}
-                </p>
-              )}
+                {errorMessage && (
+                  <p role="alert" className="rounded-xl bg-red-100 p-3 text-sm text-red-800">
+                    {errorMessage}
+                  </p>
+                )}
 
-              <button
-                type="submit"
-                disabled={submitMutation.isPending}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3.5 font-extrabold text-emerald-950 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {submitMutation.isPending ? "Saving score..." : "Save golf score"}
-                {!submitMutation.isPending && <ArrowRight size={18} />}
-              </button>
-            </form>
+                {message && (
+                  <p role="status" className="flex items-start gap-2 rounded-xl bg-emerald-100 p-3 text-sm text-emerald-950">
+                    <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
+                    {message}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitMutation.isPending}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3.5 font-extrabold text-emerald-950 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitMutation.isPending ? "Saving score..." : "Save golf score"}
+                  {!submitMutation.isPending && <ArrowRight size={18} />}
+                </button>
+              </form>
+            )}
           </section>
 
           <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:p-8">
@@ -382,9 +453,10 @@ export default function GolfScores() {
                         <button
                           type="button"
                           onClick={() => openEditModal(round)}
-                          title="Edit score"
+                          disabled={!hasActiveSub}
+                          title={hasActiveSub ? "Edit score" : "Membership required"}
                           aria-label="Edit score"
-                          className="rounded-lg border border-emerald-100 p-2 text-emerald-800 transition hover:bg-emerald-50"
+                          className="rounded-lg border border-emerald-100 p-2 text-emerald-800 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Pencil size={16} />
                         </button>
@@ -394,9 +466,10 @@ export default function GolfScores() {
                             setDeletingRound(round);
                             setDeleteError("");
                           }}
-                          title="Delete score"
+                          disabled={!hasActiveSub}
+                          title={hasActiveSub ? "Delete score" : "Membership required"}
                           aria-label="Delete score"
-                          className="rounded-lg border border-red-100 p-2 text-red-600 transition hover:bg-red-50"
+                          className="rounded-lg border border-red-100 p-2 text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Trash2 size={16} />
                         </button>

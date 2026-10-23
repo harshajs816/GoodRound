@@ -75,6 +75,20 @@ router.post("/", authenticateToken, async (req, res) => {
       });
     }
 
+    // Require an active subscription to record scores
+    const activeSub = await prisma.subscription.findFirst({
+      where: { userId: req.user.userId, status: "ACTIVE" },
+      select: { id: true },
+    });
+
+    if (!activeSub) {
+      return res.status(403).json({
+        success: false,
+        message: "An active membership is required to record golf scores.",
+        requiresSubscription: true,
+      });
+    }
+
     const golfScore = await prisma.golfScore.create({
       data: {
         userId: req.user.userId,
@@ -144,6 +158,20 @@ router.patch("/:id", authenticateToken, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Provide a score or scoreDate to update",
+      });
+    }
+
+    // Require active subscription
+    const activeSub = await prisma.subscription.findFirst({
+      where: { userId: req.user.userId, status: "ACTIVE" },
+      select: { id: true },
+    });
+
+    if (!activeSub) {
+      return res.status(403).json({
+        success: false,
+        message: "An active membership is required to edit golf scores.",
+        requiresSubscription: true,
       });
     }
 
@@ -227,6 +255,20 @@ router.patch("/:id", authenticateToken, async (req, res) => {
 router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Require active subscription
+    const activeSub = await prisma.subscription.findFirst({
+      where: { userId: req.user.userId, status: "ACTIVE" },
+      select: { id: true },
+    });
+
+    if (!activeSub) {
+      return res.status(403).json({
+        success: false,
+        message: "An active membership is required to delete golf scores.",
+        requiresSubscription: true,
+      });
+    }
 
     const existingScore = await prisma.golfScore.findFirst({
       where: {
